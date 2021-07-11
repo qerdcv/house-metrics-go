@@ -1,11 +1,12 @@
 package client
 
 import (
+	"log"
+	"strconv"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"log"
-	"strconv"
 )
 
 var (
@@ -13,31 +14,30 @@ var (
 		Name: "temperature",
 		Help: "Temperature in room",
 	})
-)
-var (
+	humidity = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "humidity",
+		Help: "Humidity in room",
+	})
 	methane = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "methane",
 		Help: "Methane level in the air",
 	})
-)
-var (
 	propane = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "propane",
 		Help: "Propane level in the air",
 	})
-)
-var (
 	smoke = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "smoke",
 		Help: "Smoke level in the air",
 	})
 )
 
-var handlers = map[string] func(float64){
-	"smoke": smoke.Set,
-	"methane": methane.Set,
-	"propane": propane.Set,
+var handlers = map[string]func(float64){
+	"smoke":       smoke.Set,
+	"methane":     methane.Set,
+	"propane":     propane.Set,
 	"temperature": temperature.Set,
+	"humidity":    humidity.Set,
 }
 
 func messageHandler(client mqtt.Client, msg mqtt.Message) {
@@ -49,13 +49,14 @@ func messageHandler(client mqtt.Client, msg mqtt.Message) {
 	handlers[msg.Topic()](val)
 }
 
-var  connectionHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
+var connectionHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	log.Println("Connected to mqtt")
 	if token := client.SubscribeMultiple(map[string]byte{
 		"temperature": 0,
-		"propane": 0,
-		"methane": 0,
-		"smoke": 0,
+		"humidity":    0,
+		"propane":     0,
+		"methane":     0,
+		"smoke":       0,
 	}, messageHandler); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
