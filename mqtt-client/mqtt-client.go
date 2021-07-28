@@ -9,6 +9,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+const (
+	temperatureTopic = "metrics/temperature"
+	humidityTopic    = "metrics/humidity"
+	pressureTopic    = "metrics/pressure"
+	smokeTopic       = "metrics/smoke"
+	methaneTopic     = "metrics/methane"
+	propaneTopic     = "metrics/propane"
+)
+
 var (
 	temperature = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "temperature",
@@ -17,6 +26,10 @@ var (
 	humidity = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "humidity",
 		Help: "Humidity in room",
+	})
+	pressure = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "pressure",
+		Help: "Atmosphere pressure",
 	})
 	methane = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "methane",
@@ -33,11 +46,12 @@ var (
 )
 
 var handlers = map[string]func(float64){
-	"smoke":       smoke.Set,
-	"methane":     methane.Set,
-	"propane":     propane.Set,
-	"temperature": temperature.Set,
-	"humidity":    humidity.Set,
+	smokeTopic:       smoke.Set,
+	methaneTopic:     methane.Set,
+	propaneTopic:     propane.Set,
+	temperatureTopic: temperature.Set,
+	humidityTopic:    humidity.Set,
+	pressureTopic:    pressure.Set,
 }
 
 func messageHandler(client mqtt.Client, msg mqtt.Message) {
@@ -52,11 +66,12 @@ func messageHandler(client mqtt.Client, msg mqtt.Message) {
 var connectionHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	log.Println("Connected to mqtt")
 	if token := client.SubscribeMultiple(map[string]byte{
-		"temperature": 0,
-		"humidity":    0,
-		"propane":     0,
-		"methane":     0,
-		"smoke":       0,
+		temperatureTopic: 0,
+		humidityTopic:    0,
+		pressureTopic:    0,
+		propaneTopic:     0,
+		methaneTopic:     0,
+		smokeTopic:       0,
 	}, messageHandler); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
@@ -64,7 +79,7 @@ var connectionHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 
 func SetupOpts() *mqtt.ClientOptions {
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(":1883")
+	opts.AddBroker("192.168.31.2:1883")
 	opts.SetClientID("go_client")
 	opts.OnConnect = connectionHandler
 	return opts

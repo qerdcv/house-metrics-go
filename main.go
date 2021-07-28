@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"house-metrics/mqtt-client"
+	client "house-metrics/mqtt-client"
 	"log"
 	"net/http"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
